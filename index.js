@@ -103,40 +103,43 @@ async function run() {
     });
 
     // Login Route
-    app.post("/login", async (req, res) => {
-      try {
-        const { email, password } = req.body;
+ app.post("/login", async (req, res) => {
+   try {
+     const { email, password } = req.body;
 
-        // Find the user by email
-        const user = await userCollection.findOne({ email });
+     // Find the user by email
+     const user = await userCollection.findOne({ email });
 
-        if (!user) {
-          return res.status(401).json({ error: "Invalid email or password" });
-        }
+     if (!user) {
+       return res.status(401).json({ error: "Invalid email or password" });
+     }
 
-        // Check the password
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) {
-          return res.status(401).json({ error: "Invalid email or password" });
-        }
+     // Check the password
+     const passwordMatch = await bcrypt.compare(password, user.password);
 
-        // Generate JWT token
-        const token = jwt.sign(
-          { userId: user._id },
-          process.env.ACCESS_TOKEN_SECRET, 
-          { expiresIn: "1d" }
-        );
+     if (!passwordMatch) {
+       return res.status(401).json({ error: "Invalid email or password" });
+     }
 
-        res.status(200).json({ token });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal server error" });
-      }
-    });
+     // Generate JWT token
+     const token = jwt.sign(
+       { userId: user._id, email: user.email },
+       process.env.ACCESS_TOKEN_SECRET,
+       {
+         expiresIn: "1d",
+       }
+     );
+
+     res.status(200).json({ accessToken: token });
+   } catch (error) {
+     console.error(error);
+     res.status(500).json({ error: "Internal server error" });
+   }
+ });
     app.post("/getUser", verifyToken, async (req, res) => {
       try {
         const { email } = req.decoded;
-        const user = await User.findOne({ email });
+        const user = await userCollection.findOne({ email });
         res.send(user);
       } catch (err) {
         next(err);
